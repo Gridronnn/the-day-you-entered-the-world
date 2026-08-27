@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-[#FFFDF0] text-black antialiased selection:bg-[#FFE600] selection:text-black;
+  }
+}
+
+/* Neo-Brutalist Background Patterns */
+.bg-neo-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+}
+
+.dark .bg-neo-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+}
+
+.bg-neo-dots {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.15) 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+}
+
+.dark .bg-neo-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px);
+}
+
+.bg-neo-stripes {
+  background: repeating-linear-gradient(
+    45deg,
+    #FFE600,
+    #FFE600 10px,
+    #000000 10px,
+    #000000 20px
+  );
+}
+
+/* Neo-Brutal Components */
+.neo-card {
+  @apply bg-white border-3 border-black shadow-neo rounded-xl transition-all duration-150;
+}
+
+.neo-card-interactive {
+  @apply bg-white border-3 border-black shadow-neo rounded-xl transition-all duration-150 hover:-translate-y-1 hover:shadow-neo-md active:translate-x-0.5 active:translate-y-0.5 active:shadow-neo-xs;
+}
+
+.neo-button-primary {
+  @apply bg-[#FFE600] text-black font-heading font-bold border-3 border-black shadow-neo rounded-xl px-5 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-neo-md active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center gap-2;
+}
+
+.neo-button-secondary {
+  @apply bg-[#00F5FF] text-black font-heading font-bold border-3 border-black shadow-neo rounded-xl px-4 py-2.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-neo-md active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center gap-2;
+}
+
+.neo-button-pink {
+  @apply bg-[#FF4D8D] text-white font-heading font-bold border-3 border-black shadow-neo rounded-xl px-4 py-2.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-neo-md active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center gap-2;
+}
+
+.neo-button-white {
+  @apply bg-white text-black font-heading font-bold border-3 border-black shadow-neo rounded-xl px-4 py-2.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-neo-md active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center gap-2;
+}
+
+.neo-badge {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 text-xs font-heading font-bold uppercase tracking-wider border-2 border-black rounded-lg shadow-neo-xs;
+}
+
+.neo-input {
+  @apply bg-white text-black border-3 border-black shadow-neo-sm rounded-xl px-4 py-3 font-heading font-semibold focus:outline-none focus:ring-2 focus:ring-[#FFE600] focus:shadow-neo transition-all duration-150 placeholder:text-neutral-400;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FFFDF0;
+  border-left: 2px solid #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #FFE600;
+  border: 2px solid #000;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF4D8D;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: 200%;
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes warpTunnel {
+  0% { transform: scale(0.8) rotate(0deg); opacity: 0.3; }
+  50% { transform: scale(1.1) rotate(180deg); opacity: 0.9; }
+  100% { transform: scale(1.6) rotate(360deg); opacity: 0; }
+}
+
+.animate-warp-tunnel {
+  animation: warpTunnel 2s ease-in-out infinite;
+}
+
