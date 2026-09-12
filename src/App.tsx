@@ -13,7 +13,6 @@ import { MemoryCardSection } from './components/dashboard/MemoryCardSection';
 import { AudioFloatingWidget } from './components/common/AudioFloatingWidget';
 import { DayDataPayload, UserBirthInput } from './types/history';
 import { generateDayData } from './services/historicalDatabase';
-import { fetchVerifiedHistoricalNews } from './services/wikipediaNewsService';
 import { CurrencyCode } from './services/currencyEngine';
 import { audioEngine } from './services/audioEngine';
 import { AlertTriangle, Info, Sparkles } from 'lucide-react';
@@ -24,27 +23,11 @@ export const App: React.FC = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('USD');
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
 
-  const handleStartJourney = async (input: UserBirthInput) => {
-    // 1. Instant robust synchronous base generation
+  const handleStartJourney = (input: UserBirthInput) => {
+    // Pure in-memory state generation — 0 external network requests, 0 storage
     const payload = generateDayData(input);
     setCurrentPayload(payload);
     setViewState('travel');
-
-    // 2. Background live API query to Wikipedia REST API "On this day"
-    try {
-      const liveNews = await fetchVerifiedHistoricalNews(input.birthDate);
-      if (liveNews && liveNews.length > 0) {
-        setCurrentPayload((prev) => {
-          if (!prev) return payload;
-          return {
-            ...prev,
-            worldNews: liveNews,
-          };
-        });
-      }
-    } catch (e) {
-      // Graceful fallback already populated
-    }
   };
 
   const handleTravelComplete = () => {

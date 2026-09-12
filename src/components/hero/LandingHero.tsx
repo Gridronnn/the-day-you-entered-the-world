@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Calendar, MapPin, User, Music, ArrowRight, Compass, Volume2, VolumeX, Shuffle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Calendar, MapPin, User, Music, ArrowRight, Compass, Volume2, VolumeX, Shuffle, AlertTriangle } from 'lucide-react';
 import {
   GreenAsteriskDecal,
   PinkZigzagDecal,
@@ -42,17 +42,33 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   isAudioPlaying,
   onToggleAudio,
 }) => {
+  const currentYear = new Date().getFullYear();
   const [day, setDay] = useState('15');
   const [month, setMonth] = useState('07');
   const [year, setYear] = useState('1995');
   const [city, setCity] = useState('New York');
   const [name, setName] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+
+  // Dynamically calculate valid days for chosen month and year
+  const numYear = parseInt(year, 10) || 1995;
+  const numMonth = parseInt(month, 10) || 1;
+  const daysInSelectedMonth = new Date(numYear, numMonth, 0).getDate();
+
+  // Automatically adjust day if month changes to one with fewer days (e.g., Feb 28/29)
+  useEffect(() => {
+    const numDay = parseInt(day, 10);
+    if (!isNaN(numDay) && numDay > daysInSelectedMonth) {
+      setDay(String(daysInSelectedMonth).padStart(2, '0'));
+    }
+  }, [daysInSelectedMonth, day]);
 
   const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setCity(val);
+    if (validationError) setValidationError(null);
     if (val.trim().length > 0) {
       const matches = POPULAR_CITIES.filter((c) =>
         c.toLowerCase().includes(val.toLowerCase())
@@ -67,6 +83,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   const selectCity = (cityName: string) => {
     setCity(cityName.split(',')[0]);
     setShowCitySuggestions(false);
+    if (validationError) setValidationError(null);
   };
 
   const handlePreset = (y: string, m: string, d: string, c: string) => {
@@ -74,6 +91,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
     setMonth(m);
     setDay(d);
     setCity(c);
+    if (validationError) setValidationError(null);
   };
 
   const handleRandomDate = () => {
@@ -85,17 +103,76 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
     setMonth(randomMonth);
     setDay(randomDay);
     setCity(randomCity);
+    if (validationError) setValidationError(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formattedMonth = month.padStart(2, '0');
-    const formattedDay = day.padStart(2, '0');
-    const birthDate = `${year}-${formattedMonth}-${formattedDay}`;
+    setValidationError(null);
+
+    const parsedYear = parseInt(year, 10);
+    const parsedMonth = parseInt(month, 10);
+    const parsedDay = parseInt(day, 10);
+    const maxYear = new Date().getFullYear();
+
+    // 1. Client-side date validation: valid real date from 1930 through current year
+    if (isNaN(parsedYear) || parsedYear < 1930 || parsedYear > maxYear) {
+      setValidationError(`Please enter a valid birth year between 1930 and ${maxYear}.`);
+      return;
+    }
+
+    if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
+      setValidationError('Please select a valid month.');
+      return;
+    }
+
+    const maxDays = new Date(parsedYear, parsedMonth, 0).getDate();
+    if (isNaN(parsedDay) || parsedDay < 1 || parsedDay > maxDays) {
+      setValidationError(`Please select a valid day for the chosen month (1–${maxDays}).`);
+      return;
+    }
+
+    // Verify real calendar date integrity (checks leap years, valid day counts)
+    const testDate = new Date(parsedYear, parsedMonth - 1, parsedDay);
+    if (
+      testDate.getFullYear() !== parsedYear ||
+      testDate.getMonth() !== parsedMonth - 1 ||
+      testDate.getDate() !== parsedDay
+    ) {
+      setValidationError('Please enter a valid calendar date.');
+      return;
+    }
+
+    // Date cannot be in the future
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (testDate > today) {
+      setValidationError('Birth date cannot be in the future.');
+      return;
+    }
+
+    // 2. Client-side city validation: 2–100 characters after trimming
+    const trimmedCity = city.trim();
+    if (trimmedCity.length < 2 || trimmedCity.length > 100) {
+      setValidationError('Birth city must be between 2 and 100 characters.');
+      return;
+    }
+
+    // 3. Client-side nickname validation: optional and maximum 40 characters
+    const trimmedName = name.trim();
+    if (trimmedName.length > 40) {
+      setValidationError('Name / nickname must be 40 characters or fewer.');
+      return;
+    }
+
+    const formattedMonth = String(parsedMonth).padStart(2, '0');
+    const formattedDay = String(parsedDay).padStart(2, '0');
+    const birthDate = `${parsedYear}-${formattedMonth}-${formattedDay}`;
+
     onStartJourney({
       birthDate,
-      birthCity: city.trim() || 'New York',
-      userName: name.trim(),
+      birthCity: trimmedCity,
+      userName: trimmedName,
     });
   };
 
@@ -251,7 +328,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                 </span>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} method="post" action="#" noValidate className="space-y-5">
                 
                 {/* 1. Date of Birth Pickers */}
                 <div className="space-y-2">
@@ -264,10 +341,13 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                       <span className="text-[10px] font-heading font-bold text-neutral-500 block mb-1">DAY</span>
                       <select
                         value={day}
-                        onChange={(e) => setDay(e.target.value)}
+                        onChange={(e) => {
+                          setDay(e.target.value);
+                          if (validationError) setValidationError(null);
+                        }}
                         className="neo-input w-full text-center text-base font-bold py-2.5 px-1 bg-[#FFFDF0]"
                       >
-                        {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
+                        {Array.from({ length: daysInSelectedMonth }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
                           <option key={d} value={d}>
                             {d}
                           </option>
@@ -280,7 +360,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                       <span className="text-[10px] font-heading font-bold text-neutral-500 block mb-1">MONTH</span>
                       <select
                         value={month}
-                        onChange={(e) => setMonth(e.target.value)}
+                        onChange={(e) => {
+                          setMonth(e.target.value);
+                          if (validationError) setValidationError(null);
+                        }}
                         className="neo-input w-full text-center text-base font-bold py-2.5 px-1 bg-[#FFFDF0]"
                       >
                         {[
@@ -309,10 +392,13 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                       <span className="text-[10px] font-heading font-bold text-neutral-500 block mb-1">YEAR</span>
                       <input
                         type="number"
-                        min="1920"
-                        max="2026"
+                        min="1930"
+                        max={currentYear.toString()}
                         value={year}
-                        onChange={(e) => setYear(e.target.value)}
+                        onChange={(e) => {
+                          setYear(e.target.value);
+                          if (validationError) setValidationError(null);
+                        }}
                         className="neo-input w-full text-center text-base font-bold py-2.5 px-1 bg-[#FFFDF0]"
                       />
                     </div>
@@ -331,6 +417,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                     <input
                       type="text"
                       required
+                      minLength={2}
+                      maxLength={100}
                       value={city}
                       onChange={handleCityChange}
                       onFocus={() => {
@@ -367,7 +455,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                       Your Name / Nickname
                     </label>
                     <span className="text-[10px] font-heading font-bold text-neutral-500 uppercase">
-                      Optional for Memory Card
+                      Optional (Max 40 chars)
                     </span>
                   </div>
                   <div className="relative flex items-center">
@@ -376,14 +464,31 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                     </div>
                     <input
                       type="text"
+                      maxLength={40}
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        if (e.target.value.length <= 40) {
+                          setName(e.target.value);
+                        }
+                        if (validationError) setValidationError(null);
+                      }}
                       placeholder="e.g. Maya, Alex, Christopher"
                       style={{ paddingLeft: '44px' }}
                       className="neo-input w-full !pl-[44px] text-base bg-[#FFFDF0] h-12 flex items-center"
                     />
                   </div>
                 </div>
+
+                {/* Inline Validation Error Banner */}
+                {validationError && (
+                  <div
+                    role="alert"
+                    className="bg-[#FFE600] border-3 border-black rounded-xl p-3 shadow-neo-xs flex items-center gap-2.5 text-xs font-heading font-black text-black animate-in fade-in"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-[#FF4D8D] shrink-0" />
+                    <span>{validationError}</span>
+                  </div>
+                )}
 
                 {/* Submit CTA Button (Lilac style matching reference image 'Get started' button!) */}
                 <button

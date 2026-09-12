@@ -4,57 +4,7 @@ export async function fetchVerifiedHistoricalNews(
   birthDateStr: string
 ): Promise<WorldNewsItem[]> {
   const [year, month, day] = birthDateStr.split('-').map(Number);
-
-  // 1. Live Query to Wikipedia REST API "On This Day" (Free, public, CORS enabled)
-  try {
-    const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`;
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(4500),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.events && Array.isArray(data.events) && data.events.length > 0) {
-        // Find events on the exact year or closest to the user's birth era
-        const exactYearEvents = data.events.filter((e: any) => e.year === year);
-        const eraEvents = data.events.filter((e: any) => Math.abs(e.year - year) <= 10);
-        const selected = exactYearEvents.length >= 2 ? exactYearEvents : (eraEvents.length > 0 ? eraEvents : data.events);
-
-        const items: WorldNewsItem[] = selected.slice(0, 4).map((e: any, idx: number) => {
-          const wikiPage = e.pages && e.pages.length > 0 ? e.pages[0] : null;
-          const articleUrl = wikiPage?.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(e.text.slice(0, 40))}`;
-          
-          let category: 'World' | 'Science' | 'Culture' | 'Politics' | 'Tech' = 'World';
-          if (e.text.toLowerCase().includes('space') || e.text.toLowerCase().includes('science') || e.text.toLowerCase().includes('invent')) {
-            category = 'Science';
-          } else if (e.text.toLowerCase().includes('treaty') || e.text.toLowerCase().includes('president') || e.text.toLowerCase().includes('election')) {
-            category = 'Politics';
-          } else if (e.text.toLowerCase().includes('music') || e.text.toLowerCase().includes('art') || e.text.toLowerCase().includes('film')) {
-            category = 'Culture';
-          }
-
-          return {
-            id: `wiki-${e.year}-${idx}`,
-            title: cleanHeadline(e.text),
-            category,
-            description: e.text,
-            source: `Wikipedia Historical Archives (${e.year})`,
-            sourceUrl: articleUrl,
-            impactTag: e.year === year ? 'Exact Birth Day Event' : `${e.year} Milestone`,
-            year: e.year,
-            isVerifiedArchive: true,
-          };
-        });
-
-        if (items.length > 0) return items;
-      }
-    }
-  } catch (e) {
-    // Graceful fallback
-  }
-
-  // 2. High-Trust Offline Archive
+  // Pure in-memory verified offline archive (0 external network requests)
   return getOfflineVerifiedNews(year, month, day);
 }
 

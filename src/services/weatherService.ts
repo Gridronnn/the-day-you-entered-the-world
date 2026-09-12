@@ -5,71 +5,7 @@ export async function fetchHistoricalWeather(
   location: ResolvedLocation
 ): Promise<HistoricalWeather> {
   const [year, month, day] = birthDateStr.split('-').map(Number);
-  const { latitude, longitude, timezone, weatherStationName } = location;
-
-  // 1. Live Query to Open-Meteo Historical Archive API (1940 to present)
-  try {
-    const apiUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${birthDateStr}&end_date=${birthDateStr}&daily=weathercode,temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,snowfall_sum,windspeed_10m_max,sunrise,sunset&timezone=auto`;
-    
-    const res = await fetch(apiUrl, {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.daily && data.daily.time && data.daily.time.length > 0) {
-        const d = data.daily;
-        const maxC = d.temperature_2m_max ? Number(d.temperature_2m_max[0].toFixed(1)) : 20;
-        const minC = d.temperature_2m_min ? Number(d.temperature_2m_min[0].toFixed(1)) : 12;
-        const meanC = d.temperature_2m_mean ? Number(d.temperature_2m_mean[0].toFixed(1)) : Number(((maxC + minC) / 2).toFixed(1));
-        const precipMm = d.precipitation_sum ? Number(d.precipitation_sum[0].toFixed(1)) : 0;
-        const windKmh = d.windspeed_10m_max ? Math.round(d.windspeed_10m_max[0]) : 14;
-        const wCode = d.weathercode ? d.weathercode[0] : 0;
-
-        const maxF = Number(((maxC * 9) / 5 + 32).toFixed(1));
-        const minF = Number(((minC * 9) / 5 + 32).toFixed(1));
-        const meanF = Number(((meanC * 9) / 5 + 32).toFixed(1));
-
-        let sunrise = '06:00';
-        let sunset = '18:30';
-        if (d.sunrise && d.sunrise[0]) {
-          sunrise = d.sunrise[0].split('T')[1] || '06:00';
-        }
-        if (d.sunset && d.sunset[0]) {
-          sunset = d.sunset[0].split('T')[1] || '18:30';
-        }
-
-        const { condition, conditionCode, seasonNote } = parseWmoCode(wCode, precipMm, meanC, month);
-
-        return {
-          tempC: meanC,
-          tempF: meanF,
-          tempMinC: minC,
-          tempMinF: minF,
-          tempMaxC: maxC,
-          tempMaxF: maxF,
-          condition,
-          conditionCode,
-          humidity: precipMm > 0 ? 82 : (meanC > 25 ? 58 : 68),
-          precipitationMm: precipMm,
-          windSpeedKmh: windKmh,
-          sunrise,
-          sunset,
-          dayLength: calculateDayLength(sunrise, sunset),
-          seasonNote,
-          isLiveFetched: true,
-          dataSource: 'Open-Meteo ERA5 Historical Reanalysis (ECMWF & National Weather Services)',
-          stationDetails: weatherStationName || `Grid Station near ${location.cityName} (${latitude}°, ${longitude}°)`,
-          confidence: 'Verified Meteorological Archive',
-        };
-      }
-    }
-  } catch (e) {
-    // Graceful fallback to verified seasonal reanalysis
-  }
-
-  // 2. High-Precision Offline Historical Climate Reanalysis
+  // Pure in-memory deterministic weather reconstruction (0 network calls)
   return getOfflineReconstructedWeather(year, month, day, location);
 }
 
