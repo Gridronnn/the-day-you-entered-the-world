@@ -1,3 +1,14 @@
+export type FactStatus =
+  | 'live'
+  | 'delayed'
+  | 'historical'
+  | 'modeled'
+  | 'calculated'
+  | 'estimated'
+  | 'stale'
+  | 'unavailable'
+  | 'error';
+
 export interface UserBirthInput {
   birthDate: string; // YYYY-MM-DD
   birthCity: string;
@@ -55,10 +66,15 @@ export interface ZodiacInfo {
 export interface WorldNewsItem {
   id: string;
   title: string;
-  category: 'World' | 'Science' | 'Culture' | 'Politics' | 'Tech';
+  category: 'World' | 'Science' | 'Culture' | 'Politics' | 'Tech' | 'Archive Record' | 'World Event';
   description: string;
   source: string;
   impactTag: string;
+  sourceUrl?: string;
+  status?: FactStatus;
+  observedAt?: string;
+  methodology?: string;
+  coverageNote?: string | null;
 }
 
 export interface CityNewsItem {
@@ -68,6 +84,8 @@ export interface CityNewsItem {
   snippet: string;
   localAtmosphere: string;
   landmark: string;
+  sourceName?: string;
+  sourceUrl?: string;
 }
 
 export interface HistoricalEvent {
@@ -77,6 +95,8 @@ export interface HistoricalEvent {
   description: string;
   category: 'History' | 'Science' | 'Sports' | 'Discovery' | 'Arts';
   badge: string;
+  sourceName?: string;
+  sourceUrl?: string;
 }
 
 export interface FamousBirthday {
@@ -92,7 +112,7 @@ export interface HistoricalWeather {
   tempC: number;
   tempF: number;
   condition: string;
-  conditionCode: 'sunny' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' | 'clear_night';
+  conditionCode: 'sunny' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' | 'clear_night' | 'storm';
   humidity: number;
   windSpeedKmh: number;
   sunrise: string;
@@ -100,6 +120,19 @@ export interface HistoricalWeather {
   dayLength: string;
   seasonNote: string;
   isReconstructed: boolean;
+  // Normalized Transparency Properties
+  status?: FactStatus;
+  geography?: string;
+  stationOrGrid?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  observedAt?: string;
+  precipitationMm?: number;
+  tempHighC?: number;
+  tempLowC?: number;
+  tempMeanC?: number;
+  methodology?: string;
+  coverageNote?: string | null;
 }
 
 export interface CostItem {
@@ -110,6 +143,17 @@ export interface CostItem {
   unit: string;
   iconName: string;
   funFact?: string;
+  // Normalized Transparency Properties
+  status?: FactStatus;
+  geography?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  observedAt?: string | null;
+  publishedAt?: string | null;
+  methodology?: string;
+  coverageNote?: string | null;
+  displayFormattedThen?: string;
+  displayFormattedNow?: string;
 }
 
 export interface CostOfLiving {
@@ -122,6 +166,11 @@ export interface CostOfLiving {
   familyCar: CostItem;
   iconicTech: CostItem;
   inflationMultiplier: number;
+  cpiSeriesName?: string;
+  basePeriod?: string;
+  calculationDate?: string;
+  sourceName?: string;
+  sourceUrl?: string;
 }
 
 export interface PopCulture {
@@ -132,6 +181,8 @@ export interface PopCulture {
     genre: string;
     lyricsSnippet: string;
     melodyNotes?: { freq: number; duration: number }[];
+    sourceName?: string;
+    sourceUrl?: string;
   };
   boxOfficeMovie: {
     title: string;
@@ -140,6 +191,9 @@ export interface PopCulture {
     genre: string;
     quote: string;
     tagline: string;
+    status?: FactStatus;
+    sourceName?: string;
+    sourceUrl?: string;
   };
   tvShows: string[];
   fashionTrends: string[];
@@ -152,6 +206,8 @@ export interface UpliftingEvent {
   category: 'Humanitarian' | 'Space' | 'Medical' | 'Environment' | 'Community';
   description: string;
   badge: string;
+  sourceName?: string;
+  sourceUrl?: string;
 }
 
 export interface ThenVsNowMetric {
@@ -161,6 +217,9 @@ export interface ThenVsNowMetric {
   changeDescription: string;
   category: string;
   tag: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  observationDates?: string;
 }
 
 export interface DayDataPayload {
@@ -179,5 +238,11 @@ export interface DayDataPayload {
   notableDeaths?: { name: string; role: string; year: number; legacy: string }[];
   sportsMilestone?: { title: string; champion: string; detail: string };
   classicBook?: { title: string; author: string; impact: string };
+  metadata?: {
+    generatedAt: string;
+    dataMode: string;
+    disclaimer: string;
+    dataFreshness?: Record<string, string>;
+    sources?: Array<{ name: string; category: string; url: string }>;
+  };
 }
-

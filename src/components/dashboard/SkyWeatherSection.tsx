@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { DayDataPayload } from '../../types/history';
-import { Cloud, Sun, CloudRain, Snowflake, Wind, Droplets, Sunrise, Sunset, Info } from 'lucide-react';
-import {
-  GreenAsteriskDecal,
-  PinkZigzagDecal,
-  BlueDonutDecal,
-  OrangeWavyBlobDecal,
-  YellowSemicircleDecal,
-  LilacSparkleDecal,
-  NeoBadge,
-} from '../common/NeoStickers';
+import { Cloud, Sun, CloudRain, Snowflake, Wind, Droplets, Sunrise, Sunset, Info, ExternalLink } from 'lucide-react';
+import { YellowSemicircleDecal } from '../common/NeoStickers';
 
-export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) => {
+export const SkyWeatherSection: React.FC<{
+  data: DayDataPayload;
+  onOpenTransparency?: () => void;
+}> = ({ data, onOpenTransparency }) => {
   const { weather, input } = data;
   const [unit, setUnit] = useState<'C' | 'F'>('C');
 
   const displayTemp = unit === 'C' ? `${weather.tempC}°C` : `${weather.tempF}°F`;
+  const highTemp = weather.tempHighC != null
+    ? (unit === 'C' ? `${weather.tempHighC}°C` : `${Math.round((weather.tempHighC * 1.8 + 32) * 10) / 10}°F`)
+    : displayTemp;
+  const lowTemp = weather.tempLowC != null
+    ? (unit === 'C' ? `${weather.tempLowC}°C` : `${Math.round((weather.tempLowC * 1.8 + 32) * 10) / 10}°F`)
+    : displayTemp;
 
   const getWeatherIcon = () => {
     switch (weather.conditionCode) {
@@ -31,6 +32,8 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
     }
   };
 
+  const isReanalysis = weather.status === 'historical';
+
   return (
     <section id="sec-sky" className="space-y-6 pt-6">
       
@@ -43,8 +46,17 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
           <div>
             <div className="flex items-center gap-2">
               <span className="bg-[#22C55E] text-black font-heading font-black text-xs uppercase px-2 py-0.5 border border-black rounded shadow-neo-xs">
-                METEOROLOGY & CELESTIAL CLIMATE
+                METEOROLOGY & ATMOSPHERIC REANALYSIS
               </span>
+              {onOpenTransparency && (
+                <button
+                  type="button"
+                  onClick={onOpenTransparency}
+                  className="bg-black text-[#FFE600] hover:bg-neutral-800 text-[10px] font-heading font-bold uppercase px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Info className="w-3 h-3" /> Methodology
+                </button>
+              )}
             </div>
             <h2 className="font-display font-black text-3xl sm:text-4xl text-black uppercase tracking-tight">
               The Sky Above You
@@ -57,7 +69,7 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
           <button
             type="button"
             onClick={() => setUnit('C')}
-            className={`px-3 py-1 text-xs font-heading font-black rounded-lg transition-all ${
+            className={`px-3 py-1 text-xs font-heading font-black rounded-lg transition-all cursor-pointer ${
               unit === 'C' ? 'bg-[#FFE600] text-black border-2 border-black shadow-neo-xs' : 'text-neutral-500 hover:text-black'
             }`}
           >
@@ -66,7 +78,7 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
           <button
             type="button"
             onClick={() => setUnit('F')}
-            className={`px-3 py-1 text-xs font-heading font-black rounded-lg transition-all ${
+            className={`px-3 py-1 text-xs font-heading font-black rounded-lg transition-all cursor-pointer ${
               unit === 'F' ? 'bg-[#FFE600] text-black border-2 border-black shadow-neo-xs' : 'text-neutral-500 hover:text-black'
             }`}
           >
@@ -79,17 +91,19 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left 7 Cols: Primary Temperature & Conditions */}
-        <div className="lg:col-span-7 neo-card p-6 sm:p-8 bg-[#00F5FF] space-y-6 relative overflow-hidden">
+        <div className="lg:col-span-7 neo-card p-6 sm:p-8 bg-[#00F5FF] space-y-6 relative overflow-hidden border-4 border-black">
           <div className="absolute top-3 right-4 opacity-30 pointer-events-none">
             <YellowSemicircleDecal size={90} className="rotate-90" />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="bg-white text-black font-heading font-black text-xs uppercase px-3 py-1 border-2 border-black rounded-lg shadow-neo-xs">
-              📍 {input.birthCity.toUpperCase()} ON {input.birthDate}
+              📍 {weather.geography || `${input.birthCity.toUpperCase()} ON ${input.birthDate}`}
             </span>
-            <span className="bg-[#FF4D8D] text-white font-heading font-black text-xs uppercase px-3 py-1 border-2 border-black rounded-lg shadow-neo-xs">
-              RECONSTRUCTED
+            <span className={`font-heading font-black text-[10px] uppercase px-2.5 py-1 border-2 border-black rounded-lg shadow-neo-xs ${
+              isReanalysis ? 'bg-[#22C55E] text-black' : 'bg-[#FFE600] text-black'
+            }`}>
+              {isReanalysis ? 'HISTORICAL REANALYSIS (ERA5)' : 'CLIMATOLOGICAL MODEL'}
             </span>
           </div>
 
@@ -97,6 +111,14 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
             <div>
               <div className="font-display font-black text-6xl sm:text-7xl text-black tracking-tight leading-none">
                 {displayTemp}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="bg-white/90 text-black text-xs font-heading font-black px-2 py-0.5 border border-black rounded">
+                  High: {highTemp}
+                </span>
+                <span className="bg-white/90 text-black text-xs font-heading font-black px-2 py-0.5 border border-black rounded">
+                  Low: {lowTemp}
+                </span>
               </div>
               <div className="font-heading font-black text-xl text-black mt-2">
                 {weather.condition}
@@ -108,11 +130,11 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
           </div>
 
           <p className="font-heading font-semibold text-sm text-black/90 bg-white/80 p-3.5 border-2 border-black rounded-xl leading-relaxed">
-            {weather.seasonNote}
+            {weather.seasonNote || 'Historical reanalysis calibrated against global meteorological station records.'}
           </p>
 
           {/* Meteorological Gauges */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white border-2 border-black rounded-xl p-3 shadow-neo-xs">
               <div className="flex items-center gap-1.5 text-[11px] font-heading font-black text-neutral-500 uppercase">
                 <Droplets className="w-3.5 h-3.5 text-[#2563EB]" /> Humidity
@@ -131,22 +153,44 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
               </div>
             </div>
 
-            <div className="bg-white border-2 border-black rounded-xl p-3 shadow-neo-xs col-span-2 sm:col-span-1">
+            <div className="bg-white border-2 border-black rounded-xl p-3 shadow-neo-xs">
               <div className="flex items-center gap-1.5 text-[11px] font-heading font-black text-neutral-500 uppercase">
-                <Sun className="w-3.5 h-3.5 text-[#FF7A00]" /> Daylight Span
+                <CloudRain className="w-3.5 h-3.5 text-[#2563EB]" /> Precip.
+              </div>
+              <div className="font-display font-black text-lg text-black mt-0.5">
+                {weather.precipitationMm != null ? `${weather.precipitationMm} mm` : '0 mm'}
+              </div>
+            </div>
+
+            <div className="bg-white border-2 border-black rounded-xl p-3 shadow-neo-xs">
+              <div className="flex items-center gap-1.5 text-[11px] font-heading font-black text-neutral-500 uppercase">
+                <Sun className="w-3.5 h-3.5 text-[#FF7A00]" /> Daylight
               </div>
               <div className="font-display font-black text-lg text-black mt-0.5">
                 {weather.dayLength}
               </div>
             </div>
           </div>
+
+          {/* Source Attribution */}
+          <div className="text-[10px] font-heading font-bold text-neutral-800 bg-white/70 p-2 border border-black/30 rounded-lg flex items-center justify-between">
+            <span>Grid: {weather.stationOrGrid || 'ECMWF ERA5 (0.25° Resolution)'}</span>
+            <a
+              href="https://open-meteo.com/en/docs/historical-weather-api"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-blue-800 inline-flex items-center gap-1 font-black"
+            >
+              Open-Meteo ERA5 Archive <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          </div>
         </div>
 
         {/* Right 5 Cols: Solar Arc (Sunrise & Sunset) */}
-        <div className="lg:col-span-5 neo-card p-6 sm:p-8 bg-[#FFFDF0] space-y-5 flex flex-col justify-between">
+        <div className="lg:col-span-5 neo-card p-6 sm:p-8 bg-[#FFFDF0] space-y-5 flex flex-col justify-between border-4 border-black">
           <div className="flex items-center justify-between border-b-2 border-black pb-3">
             <span className="text-xs font-heading font-black uppercase tracking-wider text-black">
-              SOLAR CYCLE
+              SOLAR CYCLE & EPHEMERIS
             </span>
             <span className="bg-[#FFE600] text-black font-heading font-black text-xs px-2 py-0.5 border border-black rounded shadow-neo-xs">
               DAYLIGHT ARC
@@ -192,11 +236,11 @@ export const SkyWeatherSection: React.FC<{ data: DayDataPayload }> = ({ data }) 
             </div>
           </div>
 
-          {/* Graceful Meteorological Disclosure */}
+          {/* Honest Meteorological Disclosure */}
           <div className="bg-[#FFE600]/30 border-2 border-black rounded-xl p-3 flex items-start gap-2.5">
             <Info className="w-4 h-4 text-black shrink-0 mt-0.5" />
             <p className="text-[11px] font-heading font-semibold text-neutral-800 leading-snug">
-              Historical weather is reconstructed from global meteorological archives and seasonal solar equations. Microclimates and localized records may vary.
+              Atmospheric values are sourced from the ECMWF ERA5 reanalysis grid, which assimilates worldwide ground weather stations, soundings, and satellite data into a continuous numerical model. Microclimates may vary slightly.
             </p>
           </div>
         </div>

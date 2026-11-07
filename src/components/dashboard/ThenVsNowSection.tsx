@@ -1,17 +1,12 @@
 import React from 'react';
 import { DayDataPayload } from '../../types/history';
-import { ArrowRight, TrendingUp, Users, Heart, Sparkles, Globe, Cpu, Film } from 'lucide-react';
-import {
-  GreenAsteriskDecal,
-  PinkZigzagDecal,
-  BlueDonutDecal,
-  OrangeWavyBlobDecal,
-  YellowSemicircleDecal,
-  LilacSparkleDecal,
-  NeoBadge,
-} from '../common/NeoStickers';
+import { ExternalLink, Info } from 'lucide-react';
+import { YellowSemicircleDecal } from '../common/NeoStickers';
 
-export const ThenVsNowSection: React.FC<{ data: DayDataPayload }> = ({ data }) => {
+export const ThenVsNowSection: React.FC<{
+  data: DayDataPayload;
+  onOpenTransparency?: () => void;
+}> = ({ data, onOpenTransparency }) => {
   const { thenVsNow, input } = data;
   const [year] = input.birthDate.split('-').map(Number);
 
@@ -27,8 +22,17 @@ export const ThenVsNowSection: React.FC<{ data: DayDataPayload }> = ({ data }) =
           <div>
             <div className="flex items-center gap-2">
               <span className="bg-[#00F5FF] text-black font-heading font-black text-xs uppercase px-2 py-0.5 border border-black rounded shadow-neo-xs">
-                EPOCH COMPARISON & PROGRESSION
+                EPOCH PROGRESSION & DEMOGRAPHICS
               </span>
+              {onOpenTransparency && (
+                <button
+                  type="button"
+                  onClick={onOpenTransparency}
+                  className="bg-black text-[#FFE600] hover:bg-neutral-800 text-[10px] font-heading font-bold uppercase px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Info className="w-3 h-3" /> UN / WHO Sources
+                </button>
+              )}
             </div>
             <h2 className="font-display font-black text-3xl sm:text-4xl text-black uppercase tracking-tight">
               Then vs Now
@@ -50,12 +54,12 @@ export const ThenVsNowSection: React.FC<{ data: DayDataPayload }> = ({ data }) =
               How the world evolved between {year} and 2026
             </div>
             <p className="font-heading font-semibold text-xs text-neutral-800">
-              A journey of technological leaps, human expansion, and cultural evolution.
+              Verified global transformations sourced from the United Nations, World Health Organization, and International Telecommunication Union.
             </p>
           </div>
         </div>
         <span className="bg-white text-black font-heading font-black text-xs uppercase px-3 py-1 border-2 border-black rounded-lg shadow-neo-xs">
-          {2026 - year} Years of Transformation
+          {2026 - year} Years of Global Progress
         </span>
       </div>
 
@@ -64,7 +68,7 @@ export const ThenVsNowSection: React.FC<{ data: DayDataPayload }> = ({ data }) =
         {thenVsNow.map((metric) => (
           <div
             key={metric.title}
-            className="neo-card p-6 bg-white space-y-4 hover:-translate-y-1 transition-transform"
+            className="neo-card p-6 bg-white space-y-4 hover:-translate-y-1 transition-transform border-3 border-black"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-heading font-black uppercase tracking-wider text-neutral-600">
@@ -92,7 +96,7 @@ export const ThenVsNowSection: React.FC<{ data: DayDataPayload }> = ({ data }) =
 
               <div className="space-y-1 border-l-2 border-neutral-300 pl-3">
                 <div className="text-[10px] font-heading font-black text-[#2563EB] uppercase">
-                  NOW (2026)
+                  LATEST BENCHMARK (2026)
                 </div>
                 <div className="font-display font-black text-xl text-[#2563EB]">
                   {metric.nowValue}
@@ -100,9 +104,21 @@ export const ThenVsNowSection: React.FC<{ data: DayDataPayload }> = ({ data }) =
               </div>
             </div>
 
-            <p className="text-xs font-heading font-semibold text-neutral-700 leading-relaxed">
-              ✦ {metric.changeDescription}
+            <p className="font-heading font-semibold text-xs text-neutral-700 leading-relaxed">
+              {metric.changeDescription}
             </p>
+
+            <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-[10px] font-heading font-bold text-neutral-500">
+              <span>Observed: {year} vs 2026</span>
+              <a
+                href={metric.sourceUrl || 'https://population.un.org/wpp/'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-600 underline inline-flex items-center gap-1 text-black font-bold"
+              >
+                {metric.sourceName || 'UN / WHO Official Registry'} <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </div>
           </div>
         ))}
       </div>

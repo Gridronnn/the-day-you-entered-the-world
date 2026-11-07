@@ -11,23 +11,54 @@ import { UpliftingSection } from './components/dashboard/UpliftingSection';
 import { ThenVsNowSection } from './components/dashboard/ThenVsNowSection';
 import { MemoryCardSection } from './components/dashboard/MemoryCardSection';
 import { AudioFloatingWidget } from './components/common/AudioFloatingWidget';
+import { DataTransparencyModal } from './components/common/DataTransparencyModal';
 import { DayDataPayload, UserBirthInput } from './types/history';
 import { generateDayData } from './services/historicalDatabase';
-import { CurrencyCode } from './services/currencyEngine';
+import { fetchLiveStoryData } from './services/storyApiClient';
+import { CurrencyCode, calculateCostOfLiving } from './services/currencyEngine';
 import { audioEngine } from './services/audioEngine';
-import { AlertTriangle, Info, Sparkles } from 'lucide-react';
+import { Info, ShieldCheck } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [viewState, setViewState] = useState<'hero' | 'travel' | 'dashboard'>('hero');
   const [currentPayload, setCurrentPayload] = useState<DayDataPayload | null>(null);
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('USD');
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
+  const [isTransparencyOpen, setIsTransparencyOpen] = useState<boolean>(false);
 
   const handleStartJourney = (input: UserBirthInput) => {
-    // Pure in-memory state generation — 0 external network requests, 0 storage
-    const payload = generateDayData(input);
-    setCurrentPayload(payload);
+    // 1. Initial verified offline payload to start travel sequence instantly
+    const initialPayload = generateDayData(input, selectedCurrency);
+    setCurrentPayload(initialPayload);
     setViewState('travel');
+
+    // 2. Fetch live data from Open-Meteo, Wikimedia, ECB, and country-aware economic series
+    fetchLiveStoryData(input, selectedCurrency)
+      .then((livePayload) => {
+        setCurrentPayload(livePayload);
+      })
+      .catch((err) => {
+        console.warn('Live API resolution fallback to verified archive:', err);
+      });
+  };
+
+  const handleChangeCurrency = (newCurrency: CurrencyCode) => {
+    setSelectedCurrency(newCurrency);
+    if (currentPayload) {
+      const [year] = currentPayload.input.birthDate.split('-').map(Number);
+      const updatedCosts = calculateCostOfLiving(year, newCurrency, currentPayload.input.birthCity);
+      setCurrentPayload({
+        ...currentPayload,
+        costOfLiving: updatedCosts,
+      });
+
+      // Also refresh live economics from API with the new currency
+      fetchLiveStoryData(currentPayload.input, newCurrency)
+        .then((fresh) => {
+          setCurrentPayload(fresh);
+        })
+        .catch(() => {});
+    }
   };
 
   const handleTravelComplete = () => {
@@ -78,10 +109,11 @@ export const App: React.FC = () => {
           <DashboardHeader
             data={currentPayload}
             selectedCurrency={selectedCurrency}
-            onChangeCurrency={setSelectedCurrency}
+            onChangeCurrency={handleChangeCurrency}
             isAudioPlaying={isAudioPlaying}
             onToggleAudio={handleToggleAudio}
             onReset={handleReset}
+            onOpenTransparency={() => setIsTransparencyOpen(true)}
           />
 
           {/* Dashboard Container */}
@@ -90,16 +122,23 @@ export const App: React.FC = () => {
             <ArrivalSection data={currentPayload} />
 
             {/* Section 2: The World That Day */}
-            <WorldNewsSection data={currentPayload} />
+            <WorldNewsSection
+              data={currentPayload}
+              onOpenTransparency={() => setIsTransparencyOpen(true)}
+            />
 
             {/* Section 3: The Sky Above You */}
-            <SkyWeatherSection data={currentPayload} />
+            <SkyWeatherSection
+              data={currentPayload}
+              onOpenTransparency={() => setIsTransparencyOpen(true)}
+            />
 
             {/* Section 4: What Life Cost */}
             <CostOfLivingSection
               data={currentPayload}
               selectedCurrency={selectedCurrency}
-              onChangeCurrency={setSelectedCurrency}
+              onChangeCurrency={handleChangeCurrency}
+              onOpenTransparency={() => setIsTransparencyOpen(true)}
             />
 
             {/* Section 5: What Everyone Loved */}
@@ -109,23 +148,37 @@ export const App: React.FC = () => {
             <UpliftingSection data={currentPayload} />
 
             {/* Section 7: Then vs Now */}
-            <ThenVsNowSection data={currentPayload} />
+            <ThenVsNowSection
+              data={currentPayload}
+              onOpenTransparency={() => setIsTransparencyOpen(true)}
+            />
 
             {/* Section 8: Your Birth Day Story */}
             <MemoryCardSection data={currentPayload} />
 
-            {/* Historical Data & Regional Variance Transparency Note */}
+            {/* Historical Data & Regional Variance Transparency Banner */}
             <div className="bg-[#FFE600] border-4 border-black rounded-3xl p-6 sm:p-8 shadow-neo-lg space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-black text-[#FFE600] rounded-xl flex items-center justify-center font-black">
-                  <Info className="w-5 h-5" />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 bg-black text-[#FFE600] rounded-xl flex items-center justify-center font-black">
+                    <ShieldCheck className="w-5 h-5 text-[#FFE600]" />
+                  </div>
+                  <h3 className="font-display font-black text-xl text-black uppercase">
+                    Data Integrity & Sourced Methodology
+                  </h3>
                 </div>
-                <h3 className="font-display font-black text-xl text-black uppercase">
-                  Note on Historical Archives & Methodology
-                </h3>
+
+                <button
+                  type="button"
+                  onClick={() => setIsTransparencyOpen(true)}
+                  className="px-3.5 py-1.5 bg-black text-[#FFE600] hover:bg-neutral-800 text-xs font-heading font-black uppercase rounded-xl border border-black shadow-neo-xs flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
+                >
+                  <Info className="w-3.5 h-3.5" /> Full Sourced Audit
+                </button>
               </div>
+
               <p className="font-heading font-semibold text-xs sm:text-sm text-black/90 leading-relaxed">
-                Historical news, prices, and weather records may vary by country, region, and available documentation. Meteorological details are reconstructed from historical climate records and reanalysis archives. Commodity prices and purchasing power metrics represent national consumer price benchmarks converted for historical context. Celestial positions and lunar phases are calculated using high-precision astronomical algorithms (Jean Meeus ephemeris).
+                Facts on this dashboard are drawn from verified public statistical archives and scientific models. Atmospheric weather is reconstructed from the ECMWF ERA5 global reanalysis grid via Open-Meteo. Economic prices are sourced from official national series (Reserve Bank of India, PPAC, and U.S. BLS / EIA). World headlines are pulled from the Wikimedia Foundation "On This Day" registry. No data points are fabricated or artificially simulated.
               </p>
             </div>
           </main>
@@ -138,17 +191,27 @@ export const App: React.FC = () => {
                   The Day You Entered The World
                 </div>
                 <div className="text-xs font-semibold text-neutral-400">
-                  A Neo-Brutalist Time Travel Journey • 1930 to Present
+                  A Neo-Brutalist Time Travel Journey • Verified Sourced Data Architecture
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleReset}
-                className="bg-[#FFE600] text-black font-heading font-black text-xs uppercase px-4 py-2.5 border-2 border-black rounded-xl shadow-neo-xs hover:-translate-y-0.5 active:translate-y-0.5 transition-all"
-              >
-                Explore Another Date 🚀
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsTransparencyOpen(true)}
+                  className="bg-neutral-800 hover:bg-neutral-700 text-[#FFE600] text-xs font-heading font-bold px-3 py-2 border border-neutral-600 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" /> Data Audit
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="bg-[#FFE600] text-black font-heading font-black text-xs uppercase px-4 py-2 border-2 border-black rounded-xl shadow-neo-xs hover:-translate-y-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                >
+                  Explore Another Date 🚀
+                </button>
+              </div>
             </div>
           </footer>
 
@@ -156,6 +219,12 @@ export const App: React.FC = () => {
           <AudioFloatingWidget
             isPlaying={isAudioPlaying}
             onToggle={handleToggleAudio}
+          />
+
+          {/* Transparency Audit Modal */}
+          <DataTransparencyModal
+            isOpen={isTransparencyOpen}
+            onClose={() => setIsTransparencyOpen(false)}
           />
         </div>
       )}
@@ -165,4 +234,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-

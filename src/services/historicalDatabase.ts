@@ -11,7 +11,7 @@ import {
 } from '../types/history';
 import { calculateDayFacts, calculateZodiacInfo } from './astronomyEngine';
 import { getHistoricalWeather } from './weatherEngine';
-import { calculateCostOfLiving } from './currencyEngine';
+import { calculateCostOfLiving, CurrencyCode } from './currencyEngine';
 
 interface YearEraArchive {
   worldHeadlines: WorldNewsItem[];
@@ -487,14 +487,14 @@ export function getCityNewsItem(city: string, year: number): CityNewsItem {
   };
 }
 
-export function generateDayData(input: UserBirthInput): DayDataPayload {
+export function generateDayData(input: UserBirthInput, currency: CurrencyCode = 'USD'): DayDataPayload {
   const [year, month, day] = input.birthDate.split('-').map(Number);
   const eraArchive = getEraArchive(year);
 
   const dayFacts = calculateDayFacts(input.birthDate);
   const zodiac = calculateZodiacInfo(input.birthDate, input.birthCity);
   const weather = getHistoricalWeather(input.birthDate, input.birthCity);
-  const costOfLiving = calculateCostOfLiving(year);
+  const costOfLiving = calculateCostOfLiving(year, currency, input.birthCity);
   const famousBirthdays = getFamousBirthdays(month, day, year);
   const cityNews = getCityNewsItem(input.birthCity, year);
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, ArrowLeft, Volume2, VolumeX, DollarSign, Calendar, MapPin, Share2, Compass, ChevronDown, Check } from 'lucide-react';
+import { Sparkles, ArrowLeft, Volume2, VolumeX, DollarSign, Calendar, MapPin, Share2, Compass, ChevronDown, Check, ShieldCheck } from 'lucide-react';
 import { CurrencyCode, CURRENCIES } from '../../services/currencyEngine';
 import { DayDataPayload } from '../../types/history';
 import { audioEngine } from '../../services/audioEngine';
@@ -11,6 +11,7 @@ interface DashboardHeaderProps {
   isAudioPlaying: boolean;
   onToggleAudio: () => void;
   onReset: () => void;
+  onOpenTransparency?: () => void;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -20,6 +21,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   isAudioPlaying,
   onToggleAudio,
   onReset,
+  onOpenTransparency,
 }) => {
   const [activeTab, setActiveTab] = useState<string>('sec-arrival');
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
@@ -121,6 +123,19 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
         {/* Right: Currency & Audio Controls */}
         <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+          {/* Data Transparency Modal Trigger */}
+          {onOpenTransparency && (
+            <button
+              type="button"
+              onClick={onOpenTransparency}
+              className="bg-[#22C55E] hover:bg-[#16a34a] text-black border-2 border-black rounded-lg px-2.5 py-1 font-heading font-black text-xs shadow-neo-xs flex items-center gap-1.5 transition-all active:translate-y-0.5 cursor-pointer"
+              title="View Sourced Providers, Update Cadence & Freshness Audit"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">SOURCES</span>
+            </button>
+          )}
+
           {/* Compact Neo-Brutalist Currency Switcher */}
           <div className="relative inline-flex items-center" ref={currencyDropdownRef}>
             <span className="text-[10px] font-mono font-bold text-neutral-500 mr-1.5 hidden sm:inline select-none">
